@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{D799BA9E-76B3-E362-27EB-D0D88E79B76C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamAudioUnity", "SteamAudioUnity.csproj", "{D390D4B6-F90A-6290-9A32-B6F8BC93BD9E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamAudioUnityEditor", "SteamAudioUnityEditor.csproj", "{6643E7FE-0642-2D62-2F6C-E957404F26BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D799BA9E-76B3-E362-27EB-D0D88E79B76C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D799BA9E-76B3-E362-27EB-D0D88E79B76C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D799BA9E-76B3-E362-27EB-D0D88E79B76C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D799BA9E-76B3-E362-27EB-D0D88E79B76C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D390D4B6-F90A-6290-9A32-B6F8BC93BD9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D390D4B6-F90A-6290-9A32-B6F8BC93BD9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D390D4B6-F90A-6290-9A32-B6F8BC93BD9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D390D4B6-F90A-6290-9A32-B6F8BC93BD9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6643E7FE-0642-2D62-2F6C-E957404F26BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6643E7FE-0642-2D62-2F6C-E957404F26BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6643E7FE-0642-2D62-2F6C-E957404F26BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6643E7FE-0642-2D62-2F6C-E957404F26BC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
