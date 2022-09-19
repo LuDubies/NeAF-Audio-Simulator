@@ -3,39 +3,57 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.IO;
+using Unity.VisualScripting;
 
-public class Dataset : MonoBehaviour
-{
+public class Dataset : MonoBehaviour {
     // general info
     public System.Guid guid;
     public System.DateTime date;
-    public string version = "1.0";
+    public string version = "2.0";
 
 
     public GameObject producer;
     public GameObject listener;
+
+    // enum for data mode
+    private enum Mode { RandomSampling, Fixed, Map };
+    [SerializeField]
+    private Mode mode;
+
+    public bool saveRawRecordings;
 
     // recording count parameters
     [Range(1, 10000)]
     public int position_cnt;
     [Range(1, 1000)]
     public int rotation_cnt;
-    public int total_recordings;
-    public int finished_recordings;
-    public List<Recording> allRecordings;
-    public int percentageDone = 0;
-    public long globalByteOffset = 0;
+    private int total_recordings;
+    private int finished_recordings;
+    private List<Recording> allRecordings;
+    private int percentageDone = 0;
+    private long globalByteOffset = 0;
 
     [Range(0.2f, 2f)]
     public float rec_len;
 
+    // Fixed Mode params
+    private int vertical_degrees = 90;
+    private int horizontal_degrees = 120;
+    private float[,] intensity;
+
+
+    // dB ref
+    private float dbRefValue = 0.1f;
+    private int lowerdbCap = -160;
+    private int upperdbCap = 20;
+
     // scene information
-    public Geometry geometry;
-    public SoundSource sound;
-    public Quaternion firstListenerRotation;
+    private Geometry geometry;
+    private SoundSource sound;
+    private Quaternion firstListenerRotation;
 
     // file information
-    public string filename;
+    private string filename;
 
     // recording vars
     private int total_samples;
@@ -43,8 +61,7 @@ public class Dataset : MonoBehaviour
     float[] recording;
     int recording_sample_cnt;
 
-    public void Awake()
-    {
+    public void Awake() {
         listener = this.gameObject;
         firstListenerRotation = listener.transform.rotation;
         guid = System.Guid.NewGuid();
@@ -56,10 +73,13 @@ public class Dataset : MonoBehaviour
         filename = "Dataset-" + date.ToString("MM-ddTHH-mm-ss") + "--" + position_cnt;
         recording_sample_cnt = Mathf.CeilToInt(AudioSettings.outputSampleRate * rec_len * 2);
         recording = new float[recording_sample_cnt];
+
+        if (mode == Mode.Fixed) {
+            intensity = new float[position_cnt, rotation_cnt];
+        }
     }
 
-    public void Start()
-    {
+    public void Start() {
         // set Geometry and SoundSource
         geometry = new Geometry();
         sound = new SoundSource();
@@ -67,15 +87,14 @@ public class Dataset : MonoBehaviour
         Invoke("DetermineNextRecordingParameters", 1);
     }
 
-    public void Save()
-    {
+    void Save() {
         // put general info into json file
         string complete = $"{{\"Version\": \"{version}\",\n";
         complete += "\"Geometry\": " + geometry.BuildJSON() + ",\n\"Sound\": " + sound.BuildJSON();
 
         complete += ",\n\"Recordings\": [";
         string delim = "";
-        foreach(Recording recording in allRecordings)
+        foreach (Recording recording in allRecordings)
         {
             complete += delim + "\n" + recording.BuildJson();
             delim = ",";
@@ -84,9 +103,18 @@ public class Dataset : MonoBehaviour
 
         complete += "}";
         File.WriteAllText(@"C:\Users\lucad\NeAF\data\" + filename + ".json", complete);
+
+        if(mode == Mode.Fixed)
+        {
+            StreamWriter sw = new StreamWriter(@"C:\Users\lucad\NeAF\data\" + filename + "intensities.csv", append: false);
+            for (int i = 0; i < intensity.GetLength(0); i++) {
+                sw.WriteLine(string.Join(",", Enumerable.Range(0, intensity.GetLength(1)).Select(x => intensity[i, x].ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray()));
+            }
+            sw.Close();
+        }
     }
 
-    public void DetermineNextRecordingParameters() {
+    void DetermineNextRecordingParameters() {
         if (finished_recordings == total_recordings)
         {
             Save();
@@ -94,46 +122,73 @@ public class Dataset : MonoBehaviour
             return;
         }
 
-        if (finished_recordings % rotation_cnt == 0)
+        if (mode == Mode.RandomSampling)
         {
-            // find new position
-            listener.transform.position = new Vector3(
-                producer.transform.position.x + (float)Random.Range(-25, 25),
-                0f,
-                producer.transform.position.z + (float)Random.Range(-25, 25));
-            listener.transform.rotation = firstListenerRotation;
-        } else
-        {
-            // rotate for next recording
-            listener.transform.RotateAround(listener.transform.position, Vector3.up, 360 / rotation_cnt);
+            if (finished_recordings % rotation_cnt == 0)
+            {
+                // find new random position
+                listener.transform.position = new Vector3(
+                    producer.transform.position.x + (float)Random.Range(-25, 25),
+                    0f,
+                    producer.transform.position.z + (float)Random.Range(-25, 25));
+                listener.transform.rotation = firstListenerRotation;
+            }
+            else
+            {
+                // rotate for next recording
+                listener.transform.RotateAround(listener.transform.position, Vector3.up, 360 / rotation_cnt);
+            }
         }
+        else if (mode == Mode.Fixed)
+        {
+            // position is FIXED, change instead tilt of recording object
+            if (finished_recordings % rotation_cnt == 0)
+            {
+                // tilt from - half the vertical_degrees to + half the vertical degrees
+                int current_tilt = 0;
+                if(position_cnt > 1){
+                    current_tilt = -(vertical_degrees / 2) + (int)(((finished_recordings / rotation_cnt) / (float)(position_cnt - 1)) * vertical_degrees);
+                }
+                listener.transform.rotation = firstListenerRotation;
+                listener.transform.RotateAround(listener.transform.position, Vector3.forward, current_tilt);
+            }
+            else
+            {
+                listener.transform.RotateAround(listener.transform.position, Vector3.up, horizontal_degrees / rotation_cnt);
+            }      
+        }
+
 
         Invoke("GenerateRecording", 0.01f);
     }
 
-    public void GenerateRecording()
-    {
-        // start recording and schedule saving the finished recording
-        total_samples = 0;
-        record = true;
-        Invoke("BuildRecording", rec_len + 0.1f);
-        AudioSource audioSource = producer.GetComponent<AudioSource>();
-        audioSource.Play();
+    void GenerateRecording() {
+    // start recording and schedule saving the finished recording
+    total_samples = 0;
+    record = true;
+    Invoke("BuildRecording", rec_len + 0.1f);
+    AudioSource audioSource = producer.GetComponent<AudioSource>();
+    audioSource.Play();
     }
 
-    public void BuildRecording()
-    {
+    void BuildRecording() {
         if (record)
         {
             Debug.Log("BuildRecording called to early!!");
             Invoke("BuildRecording", 0.1f);
             return;
         }
-        Recording s = new (++finished_recordings, listener, recording, globalByteOffset);
-        s.SaveBytes(@"C:\Users\lucad\NeAF\data\" + filename + "-recordings.bin");
+        Recording s = new(finished_recordings, listener, recording, globalByteOffset, dbRefValue);
+        if(saveRawRecordings) { s.SaveBytes(@"C:\Users\lucad\NeAF\data\" + filename + "-recordings.bin"); }
         globalByteOffset += recording_sample_cnt;
 
         allRecordings.Add(s);
+
+        if (mode == Mode.Fixed) {
+            // record average decibels
+            float[] dbsl = s.GetLoudness(0);
+            intensity[(finished_recordings / rotation_cnt), finished_recordings % rotation_cnt] = (dbsl.Average() - lowerdbCap) / (upperdbCap - lowerdbCap);
+        }
 
         // status update
         if (Mathf.FloorToInt(((float)finished_recordings / total_recordings) * 100) > percentageDone)
@@ -143,12 +198,12 @@ public class Dataset : MonoBehaviour
         }
 
         // generate the next recording
+        finished_recordings++;
         DetermineNextRecordingParameters();
     }
 
-    void OnAudioFilterRead(float[] data, int channels)
-    {
-        if(record)
+    void OnAudioFilterRead(float[] data, int channels) {
+        if (record)
         {
             int current_samples = data.Length;
 
@@ -166,39 +221,33 @@ public class Dataset : MonoBehaviour
     }
 }
 
-public class PosRot
-{
+public class PosRot {
     public Vector3 position;
     public Quaternion rotation;
 
-    public PosRot(GameObject go)
-    {
+    public PosRot(GameObject go) {
         position = go.transform.position;
         rotation = go.transform.rotation;
     }
 }
 
-public class TransformEssentials
-{
+public class TransformEssentials {
     public Vector3 position;
     public Quaternion rotation;
     public Vector3 scale;
 
-    public TransformEssentials(GameObject go)
-    {
+    public TransformEssentials(GameObject go) {
         position = go.transform.position;
         rotation = go.transform.rotation;
         scale = go.transform.lossyScale;
     }
 }
 
-public class Geometry
-{
+public class Geometry {
     public List<TransformEssentials> geoEssentialCollection = new List<TransformEssentials>();
     public int oCount;
 
-    public Geometry()
-    {
+    public Geometry() {
         // get all objects with steam audio geometry
         var steamAudioGeometries = Object.FindObjectsOfType<SteamAudio.SteamAudioGeometry>();
         foreach (SteamAudio.SteamAudioGeometry sag in steamAudioGeometries)
@@ -208,8 +257,7 @@ public class Geometry
         oCount = geoEssentialCollection.Count;
     }
 
-    public string BuildJSON()
-    {
+    public string BuildJSON() {
         string json = $"{{\n\"Count\": {oCount},\n\"Objects\": [";
         string delim = "";
         foreach (TransformEssentials ge in geoEssentialCollection)
@@ -223,15 +271,13 @@ public class Geometry
     }
 }
 
-public class SoundSource
-{
+public class SoundSource {
     public TransformEssentials geo;
     public string audioFileName;
     public float start;
     public float end;
 
-    public SoundSource()
-    {
+    public SoundSource() {
         GameObject sourceObject = Object.FindObjectOfType<SteamAudio.SteamAudioSource>().gameObject;
         geo = new TransformEssentials(sourceObject);
         AudioSource audioSource = sourceObject.GetComponent<AudioSource>();
@@ -242,52 +288,50 @@ public class SoundSource
         end = soundbox.end_time;
     }
 
-    public string BuildJSON()
-    {
-        return JsonUtility.ToJson(this) + ",\n\"SoundLocation\": " + JsonUtility.ToJson(geo); 
+    public string BuildJSON() {
+        return JsonUtility.ToJson(this) + ",\n\"SoundLocation\": " + JsonUtility.ToJson(geo);
     }
 }
 
-public class Recording
-{
+public class Recording {
     public int number;
     public PosRot listenerLocation;
     public float[] samples;
     public long byteOffset;
     public bool saved;
+    public float dbRefValue;
 
-    public Recording(int _num, GameObject listener, float[] _received)
-    {
+    public Recording(int _num, GameObject listener, float[] _received) {
         number = _num;
         listenerLocation = new PosRot(listener);
         samples = _received;
         byteOffset = 0;
         saved = false;
+        dbRefValue = 0.1f;
     }
 
-    public Recording(int _num, GameObject listener, float[] _received, long _off)
-    {
+    public Recording(int _num, GameObject listener, float[] _received, long _off, float db_ref) {
         number = _num;
         listenerLocation = new PosRot(listener);
         samples = _received;
         byteOffset = _off;
         saved = false;
+        dbRefValue = db_ref;
     }
 
 
-    public string BuildJson()
-    {
+    public string BuildJson() {
         string json = $"{{\"Number\": {number},\n\"Location\":" + JsonUtility.ToJson(listenerLocation) + $",\n\"Offset\":{byteOffset}}}";
         return json;
     }
 
-    public void SaveBytes(string filename)
-    {
+    public void SaveBytes(string filename) {
         FileStream fileStream;
         if (byteOffset == 0)
         {
             fileStream = new FileStream(filename, FileMode.Create);
-        } else
+        }
+        else
         {
             fileStream = new FileStream(filename, FileMode.Append, FileAccess.Write);
         }
@@ -311,10 +355,35 @@ public class Recording
         saved = true;
     }
 
-    public void NullSamples()
-    {
+    public float[] GetLoudness(int side) {
+        var sideonly_samples = samples.Where((x, i) => i % 2 == side).ToArray();
+
+
+        int windowLength = 1024;
+        float[] window = new float[windowLength];
+        int totalWindows = Mathf.FloorToInt(sideonly_samples.Length / (float)windowLength);
+
+        float[] loudness = new float[totalWindows];
+
+
+
+        for (int window_id = 0; window_id < totalWindows; window_id++)
+        {
+            System.Array.Copy(sideonly_samples, window_id * windowLength, window, 0, windowLength);
+            float sum = 0;
+            for (int i = 0; i < windowLength; i++)
+            {
+                sum += window[i] * window[i];
+            }
+            float rmsValue = Mathf.Sqrt(sum / windowLength);
+            float dbValue = 20 * Mathf.Log10(rmsValue / dbRefValue);
+            loudness[window_id] = System.Math.Max(dbValue, -160);
+        }
+        return loudness;
+    }
+
+    public void NullSamples() {
         samples = null;
     }
-    
-
 }
+
