@@ -2,5 +2,7 @@
 /Library
 /Logs
 /Temp
+/UserSettings
 .vs
 .vsconfig
+/obj
