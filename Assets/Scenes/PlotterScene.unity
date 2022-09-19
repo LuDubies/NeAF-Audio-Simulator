@@ -601,16 +601,11 @@ MonoBehaviour:
   version: 1.0
   producer: {fileID: 1347091057}
   listener: {fileID: 0}
-  position_cnt: 1
-  rotation_cnt: 2
-  total_recordings: 0
-  finished_recordings: 0
-  percentageDone: 0
-  globalByteOffset: 0
+  mode: 1
+  saveRawRecordings: 0
+  position_cnt: 40
+  rotation_cnt: 100
   rec_len: 1
-  dbRefValue: 0.1
-  firstListenerRotation: {x: 0, y: 0, z: 0, w: 0}
-  filename: 
 --- !u!1 &871588695
 GameObject:
   m_ObjectHideFlags: 0

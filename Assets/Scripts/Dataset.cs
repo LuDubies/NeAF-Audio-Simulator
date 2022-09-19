@@ -106,7 +106,7 @@ public class Dataset : MonoBehaviour {
 
         if(mode == Mode.Fixed)
         {
-            StreamWriter sw = new StreamWriter(@"C:\Users\lucad\NeAF\data\" + filename + "intensities.csv", append: false);
+            StreamWriter sw = new StreamWriter(@"C:\Users\lucad\NeAF\data\" + filename + "-intensities.csv", append: false);
             for (int i = 0; i < intensity.GetLength(0); i++) {
                 sw.WriteLine(string.Join(",", Enumerable.Range(0, intensity.GetLength(1)).Select(x => intensity[i, x].ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray()));
             }
