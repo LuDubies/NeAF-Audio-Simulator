@@ -1,17 +1,17 @@
-
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using System.IO;
-using Unity.VisualScripting;
+
 
 public class Dataset : MonoBehaviour {
     // general info
-    public System.Guid guid;
-    public System.DateTime date;
-    public string version = "2.0";
+    private System.Guid guid;
+    private System.DateTime date;
+    private string version = "2.0";
 
-
+    [Range(0.2f, 10f)]
+    public float timeScale;
     public GameObject producer;
     public GameObject listener;
 
@@ -37,8 +37,8 @@ public class Dataset : MonoBehaviour {
     public float rec_len;
 
     // Fixed Mode params
-    private int vertical_degrees = 90;
-    private int horizontal_degrees = 120;
+    private int vertical_degrees = 120;
+    private int horizontal_degrees = 360;
     private float[,] intensity;
 
 
@@ -54,6 +54,7 @@ public class Dataset : MonoBehaviour {
 
     // file information
     private string filename;
+    private string path;
 
     // recording vars
     private int total_samples;
@@ -70,8 +71,20 @@ public class Dataset : MonoBehaviour {
         finished_recordings = 0;
         allRecordings = new List<Recording>();
 
+        // adjust time
+        Debug.Log(timeScale);
+        float fixedDTimeBckup = Time.fixedDeltaTime;
+        Time.timeScale = timeScale;
+        Time.fixedDeltaTime = fixedDTimeBckup / Time.timeScale;
+
+        // adjust pitch according to time
+        AudioSource audioSource = producer.GetComponent<AudioSource>();
+        audioSource.pitch = Time.timeScale;
+
+        path = Path.GetFullPath(Path.Combine(Application.dataPath, "../"));
         filename = "Dataset-" + date.ToString("MM-ddTHH-mm-ss") + "--" + position_cnt;
-        recording_sample_cnt = Mathf.CeilToInt(AudioSettings.outputSampleRate * rec_len * 2);
+        recording_sample_cnt = Mathf.CeilToInt((AudioSettings.outputSampleRate * rec_len * 2) / Time.timeScale);
+        Debug.Log($"Sample count per recording is: {recording_sample_cnt}");
         recording = new float[recording_sample_cnt];
 
         if (mode == Mode.Fixed) {
@@ -79,12 +92,13 @@ public class Dataset : MonoBehaviour {
         }
     }
 
+
     public void Start() {
         // set Geometry and SoundSource
         geometry = new Geometry();
         sound = new SoundSource();
 
-        Invoke("DetermineNextRecordingParameters", 1);
+        Invoke("DetermineNextRecordingParameters", 1f);
     }
 
     void Save() {
@@ -102,11 +116,12 @@ public class Dataset : MonoBehaviour {
         complete += "\n]";
 
         complete += "}";
-        File.WriteAllText(@"C:\Users\lucad\NeAF\data\" + filename + ".json", complete);
 
-        if(mode == Mode.Fixed)
+        File.WriteAllText(path + @"\data\" + filename + ".json", complete);
+
+        if (mode == Mode.Fixed)
         {
-            StreamWriter sw = new StreamWriter(@"C:\Users\lucad\NeAF\data\" + filename + "-intensities.csv", append: false);
+            StreamWriter sw = new StreamWriter(path + @"\data\" + filename + "-intensities.csv", append: false);
             for (int i = 0; i < intensity.GetLength(0); i++) {
                 sw.WriteLine(string.Join(",", Enumerable.Range(0, intensity.GetLength(1)).Select(x => intensity[i, x].ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray()));
             }
@@ -158,17 +173,16 @@ public class Dataset : MonoBehaviour {
             }      
         }
 
-
-        Invoke("GenerateRecording", 0.01f);
+        GenerateRecording();
     }
 
     void GenerateRecording() {
-    // start recording and schedule saving the finished recording
-    total_samples = 0;
-    record = true;
-    Invoke("BuildRecording", rec_len + 0.1f);
-    AudioSource audioSource = producer.GetComponent<AudioSource>();
-    audioSource.Play();
+        // start recording and schedule saving the finished recording
+        total_samples = 0;
+        record = true;
+        Invoke("BuildRecording", (rec_len + 0.1f) / timeScale);
+        AudioSource audioSource = producer.GetComponent<AudioSource>();
+        audioSource.Play();
     }
 
     void BuildRecording() {
@@ -178,6 +192,7 @@ public class Dataset : MonoBehaviour {
             Invoke("BuildRecording", 0.1f);
             return;
         }
+
         Recording s = new(finished_recordings, listener, recording, globalByteOffset, dbRefValue);
         if(saveRawRecordings) { s.SaveBytes(@"C:\Users\lucad\NeAF\data\" + filename + "-recordings.bin"); }
         globalByteOffset += recording_sample_cnt;

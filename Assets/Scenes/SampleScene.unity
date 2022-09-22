@@ -940,14 +940,15 @@ MonoBehaviour:
   version: 1.0
   producer: {fileID: 1347091057}
   listener: {fileID: 0}
-  position_cnt: 50
-  rotation_cnt: 5
+  position_cnt: 500
+  rotation_cnt: 8
   total_recordings: 0
   finished_recordings: 0
   percentageDone: 0
   globalByteOffset: 0
   rec_len: 1
   firstListenerRotation: {x: 0, y: 0, z: 0, w: 0}
+  path: 
   filename: 
 --- !u!1 &871588695
 GameObject:
@@ -1572,7 +1573,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   start_time: 1.6
-  end_time: 2.8
+  end_time: 2.4
 --- !u!1 &1373553201
 GameObject:
   m_ObjectHideFlags: 0
