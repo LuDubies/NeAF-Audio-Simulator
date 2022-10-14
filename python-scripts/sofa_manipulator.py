@@ -17,7 +17,7 @@ def plot_coordinates(coords, title):
     plt.title(title)
     return q
 
-matplotlib.use('tkagg')
+# matplotlib.use('tkagg')
 
 
 HRTF_path = r'./hrtf/MRT01.sofa'
@@ -32,35 +32,16 @@ source_positions = HRTF.Source.Position.get_values(system="cartesian")
 plot_coordinates(source_positions, 'Source positions')
 
 
-# plot Data.IR at M=5 for E=0
-measurement = 2000
-emitter = 0
-legend = []
-
-# print some stuff
-print(f'Sampling Rate: {HRTF.Data.SamplingRate.get_values(indices={"M": measurement})}')
-
-t = np.arange(0, HRTF.Dimensions.N)*HRTF.Data.SamplingRate.get_values(indices={"M": measurement})
-
-plt.figure(figsize=(15, 5))
-for receiver in np.arange(HRTF.Dimensions.R):
-    plt.plot(t, HRTF.Data.IR.get_values(indices={"M": measurement, "R": receiver, "E": emitter}))
-    legend.append('Receiver {0}'.format(receiver))
-plt.title('HRIR at M={0} for emitter {1}'.format(measurement, emitter))
-plt.legend(legend)
-plt.xlabel('$t$ in s')
-plt.ylabel(r'$h(t)$')
-plt.grid()
-
-saved_measurement = HRTF.Data.IR.get_values(indices={"M": measurement, "R": 0, "E": emitter})
+saved_measurement = HRTF.Data.IR.get_values(indices={"M": 2000, "R": 0, "E": 0})
+saved_positions = HRTF.Source.Position.get_values(system="cartesian")
 HRTF.close()
 
 # plt.show()
 
 # create own HRTF
 
-HRIR_path = r'./hrtf/selfmade.sofa'
-measurements = 5
+HRIR_path = r'./hrtf/selfmade_sources.sofa'
+measurements = 2304
 data_length = 256
 max_string_length = 128
 receivers = 2
@@ -94,24 +75,33 @@ HRIR.Variables.dump()
 
 # enter measurement from other hrtf
 HRIR.Data.IR.set_values(saved_measurement, indices={"M": 1, "R": 0, "E": 0})
+HRIR.Data.IR.set_values(saved_measurement, indices={"M": 2, "R": 1, "E": 0})
 
-# plot new creation
+# enter source positions
+HRIR.Source.Position.set_values(saved_positions, system='cartesian')
+
+# inspect source
+print(HRIR.Listener.Position.get_values(system="cartesian"))
+print(HRIR.Listener.View.get_values())
+print(HRIR.Listener.Up.get_values())
+source_positions = HRIR.Source.Position.get_values(system="spherical")
+interesting_positions = [pos for pos in source_positions if any([(0.1 > coord > -0.1) for coord in pos[:2]])]
+print(len(interesting_positions))
+print(interesting_positions)
+
 source_positions = HRIR.Source.Position.get_values(system="cartesian")
 plot_coordinates(source_positions, 'Source positions')
 
 measurement = 1
 legend = []
 
-# print some stuff
-print(f'Sampling Rate: {HRIR.Data.SamplingRate.get_values(indices={"M": measurement})}')
-
 t = np.arange(0, HRIR.Dimensions.N)*HRIR.Data.SamplingRate.get_values(indices={"M": measurement})
 
 plt.figure(figsize=(15, 5))
 for receiver in np.arange(HRIR.Dimensions.R):
-    plt.plot(t, HRIR.Data.IR.get_values(indices={"M": measurement, "R": receiver, "E": emitter}))
+    plt.plot(t, HRIR.Data.IR.get_values(indices={"M": measurement, "R": receiver, "E": 0}))
     legend.append('Receiver {0}'.format(receiver))
-plt.title('HRIR at M={0} for emitter {1}'.format(measurement, emitter))
+plt.title('HRIR at M={0} for emitter {1}'.format(measurement, 0))
 plt.legend(legend)
 plt.xlabel('$t$ in s')
 plt.ylabel(r'$h(t)$')
@@ -120,4 +110,4 @@ plt.grid()
 HRIR.save()
 HRIR.close()
 
-plt.show()
+# plt.show()
