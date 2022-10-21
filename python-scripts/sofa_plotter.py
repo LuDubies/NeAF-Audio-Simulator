@@ -5,7 +5,7 @@ from mpl_toolkits import mplot3d
 import numpy as np
 
 
-SOURCE_SOFA = r'./hrtf/selfmade_sources.sofa'
+SOURCE_SOFA = r'./hrtf/MRT01_manip.sofa'
 
 
 def plot_coordinates(coords, title):
