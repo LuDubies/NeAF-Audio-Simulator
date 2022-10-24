@@ -7,51 +7,33 @@ TARGET_SOFA = r'./hrtf/front_filter.sofa'
 
 def main():
     hrtf = sofa.Database.open(SOURCE_SOFA)
-    hrtf.Metadata.dump()
-    hrtf.Dimensions.dump()
-    hrtf.Variables.dump()
 
     # create own HRTF
     measurements = hrtf.Dimensions.M
     data_length = hrtf.Dimensions.N
-    max_string_length = 128
+    max_string_length = hrtf.Dimensions.S
     receivers = hrtf.Dimensions.R
 
     hrir = sofa.Database.create(TARGET_SOFA, "SimpleFreeFieldHRIR",
                                 dimensions={"M": measurements, "N": data_length, "S": max_string_length})
     try:
         hrir.Listener.initialize(fixed=["Position", "View", "Up"])
-        hrir.Source.initialize(variances=["Position", "View"])
+        hrir.Source.initialize(variances=["Position"])
         hrir.Receiver.initialize(fixed=["Position"], count=receivers)
         hrir.Emitter.initialize(fixed=["Position"])
 
-        hrir.Data.initialize(variances=["Delay"])
+        hrir.Data.initialize()
 
-        hrir.Room.Type = "shoebox"
+        hrir.Data.SamplingRate = 44100.
+
+        hrir.Room.Type = "free field"
         hrir.Room.create_attribute("Location", "fake location")
-        hrir.Room.create_variable("Temperature", ("M",))
-        hrir.Room.Temperature.Units = "celsius"
-        hrir.Room.Temperature = 28
-        hrir.Room.create_string_array("Description", ("M", "S"))
+        hrir.Room.Description = "fake room"
 
-        print("Attributes and metadata")
-        hrir.Metadata.dump()
-
-        print("Dimensions")
-        hrir.Dimensions.dump()
-
-        print("Variables")
-        hrir.Variables.dump()
-
-        # TODO #
-        # 1 - filter source positions for forward cone + cleanup coordinates
-        # 2 - add source positions including "fixed" ones
-        # 3 - add IR to forward cone for one receiver
-        #
-
-        # -- 1 --
+        print("\n--------------------------------------------\n")
 
 
+        # add source positions
         saved_positions = hrtf.Source.Position.get_values(system="cartesian")
 
         # inspect source
@@ -59,10 +41,9 @@ def main():
         print(len(forward_positions))
         print(forward_positions)
 
-        # -- 2 --
         hrir.Source.Position.set_values(saved_positions, system='cartesian')
 
-        # -- 3 --
+        # only set IR for front position
         (front_idx, front_pos) = max(enumerate(saved_positions), key=lambda ip: ip[1][0])
         print(f"FRONT at {front_pos} with index {front_idx}.")
 
@@ -78,7 +59,14 @@ def main():
             hrir.Data.IR.set_values(ir1, indices={"M": m, "R": 1, "E": 0})
 
         hrir.save()
-    except Exception as e:  ## sofa raises plain Exception...
+
+        print("\n--------------------------------------------\n")
+        print(hrir.Variables.list_variables())
+        print(hrtf.Variables.list_variables())
+        for variable in hrtf.Variables.list_variables():
+            print(f"{variable}: -- {getattr(hrir, variable).get_values()} -- {getattr(hrtf, variable).get_values()}")
+
+    except Exception as e:  # sofa raises plain Exception...
         print(f"Unsuccessful, raised \"{e}\"")
         # raise e
     finally:
