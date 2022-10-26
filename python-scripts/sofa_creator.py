@@ -2,7 +2,7 @@ import sofa
 import numpy as np
 
 SOURCE_SOFA = r'./hrtf/MRT01.sofa'
-TARGET_SOFA = r'./hrtf/front_filter.sofa'
+TARGET_SOFA = r'./hrtf/unchanged.sofa'
 
 
 def main():
@@ -50,11 +50,11 @@ def main():
         for m in range(hrir.Dimensions.M):
             ir0 = hrtf.Data.IR.get_values(indices={"M": m, "R": 0, "E": 0})
             ir1 = hrtf.Data.IR.get_values(indices={"M": m, "R": 1, "E": 0})
-            if m != front_idx:
+            '''if m != front_idx:
                 ir0.fill(0.)
                 ir1.fill(0.)
             else:
-                print("leaving front measurement intact")
+                print("leaving front measurement intact")'''
             hrir.Data.IR.set_values(ir0, indices={"M": m, "R": 0, "E": 0})
             hrir.Data.IR.set_values(ir1, indices={"M": m, "R": 1, "E": 0})
 
