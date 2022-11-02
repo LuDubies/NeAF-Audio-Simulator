@@ -1,20 +1,30 @@
 import h5py
 import numpy as np
+from progress.bar import Bar
 
 
-def main():
-    with h5py.File(r'../Assets/StreamingAssets/MANIP02.sofa', 'r+') as f:
+def main(filename, option):
+    with h5py.File(filename, 'r+') as f:
         print(f.keys())
         ir = f['Data.IR']
         print(ir.shape)
         print(ir.dtype)
         print(type(ir))
-        for n in range(ir.shape[2]):
-            ir[10, 0, n] = 0.0
-            ir[10, 1, n] = 0.0
+
+        bar = Bar("Editing HDF5", max=ir.shape[0])
+
+        if option == 'zero':
+            for m in range(ir.shape[0]):
+                for n in range(ir.shape[2]):
+                    ir[m, 0, n] = 0.0
+                    ir[m, 1, n] = 0.0
+                bar.next()
+
         f.flush()
-        #YYYYYYYYYYYYYEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEESSSSSSSSS
+        bar.finish()
 
 
 if __name__ == "__main__":
-    main()
+    FILENAME = r'../Assets/StreamingAssets/ZEROED.sofa'
+    OPTION = 'zero'
+    main(FILENAME, OPTION)
