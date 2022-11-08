@@ -52,7 +52,7 @@ public class Dataset : MonoBehaviour {
     // scene information
     private Geometry geometry;
     private SoundSource sound;
-    private Transform startingTransform;
+    private Quaternion startingRotation;
 
     // file information
     private string filename;
@@ -66,7 +66,7 @@ public class Dataset : MonoBehaviour {
 
     public void Awake() {
         listener = this.gameObject;
-        startingTransform = listener.transform;
+        startingRotation = listener.transform.rotation;
         guid = System.Guid.NewGuid();
         date = System.DateTime.Now;
         total_recordings = position_cnt * rotation_cnt;
@@ -152,7 +152,7 @@ public class Dataset : MonoBehaviour {
                     producer.transform.position.x + (float)Random.Range(-25, 25),
                     0f,
                     producer.transform.position.z + (float)Random.Range(-25, 25));
-                listener.transform.rotation = startingTransform.rotation;
+                listener.transform.rotation = startingRotation;
             }
             else
             {
@@ -162,6 +162,7 @@ public class Dataset : MonoBehaviour {
         }
         else if (mode == Mode.Fixed)
         {
+            
             // position is FIXED, change instead tilt of recording object
             if (finished_recordings % rotation_cnt == 0)
             {
@@ -170,7 +171,7 @@ public class Dataset : MonoBehaviour {
                 if(position_cnt > 1){
                     current_tilt = -(vertical_degrees / 2) + (int)(((finished_recordings / rotation_cnt) / (float)(position_cnt - 1)) * vertical_degrees);
                 }
-                listener.transform.rotation = startingTransform.rotation;
+                listener.transform.rotation = startingRotation;
                 listener.transform.RotateAround(listener.transform.position, Vector3.forward, current_tilt);
             }
             else
