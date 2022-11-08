@@ -5,7 +5,7 @@ import matplotlib
 
 data_path = r'C:\Users\lucad\NeAF\data'
 if not os.path.isdir(data_path):
-    data_path = r'C:\Users\lucad\Repos\NeAF-Audio-Simulator\data'
+    data_path = r'C:\Users\lucad\Repos\NeAF-Audio-Simulator\global_data'
 
 
 filepath = data_path + '\\paint_me.csv'
@@ -25,6 +25,7 @@ with open(filepath, newline='') as csvfile:
 
 print(dbs)
 
-imgplot = plt.imshow(dbs, cmap='gray', vmin=0.6, vmax=0.8)
+# imgplot = plt.imshow(dbs, cmap='gray', vmin=0.6, vmax=0.8)
+imgplot = plt.imshow(dbs, cmap='gray')
 plt.show()
 

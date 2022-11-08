@@ -6,13 +6,13 @@ from mpl_toolkits import mplot3d
 import numpy as np
 
 
-SOURCE_SOFA = r'../Assets/StreamingAssets/CONED.sofa'
+SOURCE_SOFA = r'../Assets/StreamingAssets/TRIM_04.sofa'
 
 
 def plot_coordinates(coords, title):
     x0 = coords
     n0 = coords
-    '''
+
     # color mapping the different arrows
     colors = []
     marker_col = clrs.BASE_COLORS['r']
@@ -23,11 +23,11 @@ def plot_coordinates(coords, title):
         else:
             colors.append(neutral_col)
     print(f"Marked arrow count is {len([col for col in colors if col == marker_col])}")
-    '''
+
     fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(111, projection='3d')
     q = ax.quiver(x0[:, 0], x0[:, 1], x0[:, 2], n0[:, 0],
-                  n0[:, 1], n0[:, 2], length=0.1)
+                  n0[:, 1], n0[:, 2], color=colors, length=0.1)
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
     plt.title(title)
@@ -35,7 +35,7 @@ def plot_coordinates(coords, title):
 
 def main():
 
-    # matplotlib.use('tkagg')
+    matplotlib.use('tkagg')
 
     HRTF = sofa.Database.open(SOURCE_SOFA)
 
