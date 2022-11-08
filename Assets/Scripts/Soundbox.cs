@@ -25,6 +25,7 @@ public class Soundbox : MonoBehaviour
         }
         if(Input.GetButtonDown("Jump") && !audioSource.isPlaying)
         {
+            Debug.Log("Plying");
             audioSource.Play();
         }
         if(audioSource.isPlaying && audioSource.time >= end_time)

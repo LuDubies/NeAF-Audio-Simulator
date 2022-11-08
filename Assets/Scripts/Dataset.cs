@@ -14,6 +14,8 @@ public class Dataset : MonoBehaviour {
     public float timeScale;
     public GameObject producer;
     public GameObject listener;
+    private SteamAudio.SteamAudioManager steamAudioManager;
+    private int hrtfCount;
 
     // enum for data mode
     private enum Mode { RandomSampling, Fixed, Map };
@@ -50,7 +52,7 @@ public class Dataset : MonoBehaviour {
     // scene information
     private Geometry geometry;
     private SoundSource sound;
-    private Quaternion firstListenerRotation;
+    private Transform startingTransform;
 
     // file information
     private string filename;
@@ -64,7 +66,7 @@ public class Dataset : MonoBehaviour {
 
     public void Awake() {
         listener = this.gameObject;
-        firstListenerRotation = listener.transform.rotation;
+        startingTransform = listener.transform;
         guid = System.Guid.NewGuid();
         date = System.DateTime.Now;
         total_recordings = position_cnt * rotation_cnt;
@@ -90,6 +92,10 @@ public class Dataset : MonoBehaviour {
         if (mode == Mode.Fixed) {
             intensity = new float[position_cnt, rotation_cnt];
         }
+
+        //find the SteamAudoManager
+        steamAudioManager = GameObject.Find("Steam Audio Manager").GetComponent<SteamAudio.SteamAudioManager>();
+        hrtfCount = steamAudioManager.hrtfNames.Length;
     }
 
 
@@ -98,7 +104,7 @@ public class Dataset : MonoBehaviour {
         geometry = new Geometry();
         sound = new SoundSource();
 
-        Invoke("DetermineNextRecordingParameters", 1f);
+        Invoke("DetermineNextRecordingParameters", 3f);
     }
 
     void Save() {
@@ -146,7 +152,7 @@ public class Dataset : MonoBehaviour {
                     producer.transform.position.x + (float)Random.Range(-25, 25),
                     0f,
                     producer.transform.position.z + (float)Random.Range(-25, 25));
-                listener.transform.rotation = firstListenerRotation;
+                listener.transform.rotation = startingTransform.rotation;
             }
             else
             {
@@ -164,7 +170,7 @@ public class Dataset : MonoBehaviour {
                 if(position_cnt > 1){
                     current_tilt = -(vertical_degrees / 2) + (int)(((finished_recordings / rotation_cnt) / (float)(position_cnt - 1)) * vertical_degrees);
                 }
-                listener.transform.rotation = firstListenerRotation;
+                listener.transform.rotation = startingTransform.rotation;
                 listener.transform.RotateAround(listener.transform.position, Vector3.forward, current_tilt);
             }
             else
