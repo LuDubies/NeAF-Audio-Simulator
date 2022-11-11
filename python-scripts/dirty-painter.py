@@ -2,13 +2,23 @@ import os
 import csv
 import matplotlib.pyplot as plt
 import matplotlib
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument('-f', '--file')
+args = parser.parse_args()
 
 data_path = r'C:\Users\lucad\NeAF\data'
 if not os.path.isdir(data_path):
     data_path = r'C:\Users\lucad\Repos\NeAF-Audio-Simulator\global_data'
+print(f"Data path is {data_path}!")
 
-
-filepath = data_path + '\\paint_me.csv'
+if args.file is not None:
+    filename = args.file
+else:
+    filename = 'paint_me.csv'
+print(f"filename is {filename}")
+filepath = data_path + '\\' + filename
 if not os.path.isfile(filepath):
     print("File not found! Exiting.")
     exit()

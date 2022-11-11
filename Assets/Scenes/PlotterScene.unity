@@ -490,8 +490,8 @@ MonoBehaviour:
   listener: {fileID: 0}
   mode: 1
   saveRawRecordings: 0
-  position_cnt: 60
-  rotation_cnt: 180
+  position_cnt: 1
+  rotation_cnt: 45
   rec_len: 1
 --- !u!1 &871588695
 GameObject:

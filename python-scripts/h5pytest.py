@@ -5,7 +5,7 @@ import shutil
 import argparse as ap
 
 
-def create_target_sofa(file, orig, tasks):
+def create_target_sofa(file, orig, options, parameter):
     shutil.copy2(orig, file)
     with h5py.File(file, 'r+') as f, h5py.File(orig, 'r') as o:
 
@@ -13,15 +13,15 @@ def create_target_sofa(file, orig, tasks):
         iro = o['Data.IR']
         sp = f['SourcePosition']
 
-        if 'zero' in tasks:
+        if 'zero' in options:
             bar = Bar("Zeroing IR", max=ir.shape[0])
             for m in range(ir.shape[0]):
                 ir[m, 0, :] = np.zeros(ir.shape[2])
                 ir[m, 1, :] = np.zeros(ir.shape[2])
                 bar.next()
             bar.finish()
-        if 'trim' in tasks:
-            backward = [(i, list(p)) for i, p in enumerate(sp) if p[0] < 0.44]
+        if 'trim' in options:
+            backward = [(i, list(p)) for i, p in enumerate(sp) if p[0] < param]
             print(backward)
             print(f"{len(backward)} sources ({(len(backward)/ir.shape[0]) * 100:.2f}%)")
             bar = Bar("Trimming HRTF", max=ir.shape[0])
@@ -31,10 +31,10 @@ def create_target_sofa(file, orig, tasks):
                     ir[m, 1, :] = np.zeros(ir.shape[2])
                 bar.next()
             bar.finish()
-        if 'filter' in tasks:
-            front = np.array([1, 0, 0])
-            frontiness = np.power(np.clip(np.dot(sp, front), 0, 1), 3)
-            print(frontiness)
+        if 'filter' in options:
+            front = np.array([0, -1, 0])
+            frontiness = np.power(np.clip(np.dot(sp, front), 0, 1), int(param))
+            print(f"Building filter with power {param}.")
             bar = Bar("Building Filter", max=ir.shape[0])
             for m in range(ir.shape[0]):
                 ir[m, 0, :] = ir[m, 0, :] * frontiness[m]
@@ -52,14 +52,20 @@ if __name__ == "__main__":
     parser.add_argument('filename', default='NEW_HRTF.sofa')
     parser.add_argument('-z', '--zero', action='store_true')
     parser.add_argument('-t', '--trim')
-    parser.add_argument('-f', '--filter', action='store_true')
+    parser.add_argument('-f', '--filter')
     parser.add_argument('-o', '--original', default='MRT01.sofa')
     args = parser.parse_args()
     filename = args.filename
     original = args.original
-    options = []
-    if args.zero: options.append('zero')
-    if args.filter: options.append('filter')
+    operations = []
+    param = None
+    if args.zero:
+        operations.append('zero')
+    if args.filter is not None:
+        operations.append('filter')
+        param = args.filter
     if args.trim is not None:
-        options.append('trim')
-    create_target_sofa(SOFA_PATH + filename, SOFA_PATH + original, options)
+        operations.append('trim')
+        param = args.trim
+    print(param)
+    create_target_sofa(SOFA_PATH + filename, SOFA_PATH + original, operations, param)
