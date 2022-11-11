@@ -34,6 +34,7 @@ def create_target_sofa(file, orig, tasks):
         if 'filter' in tasks:
             front = np.array([1, 0, 0])
             frontiness = np.power(np.clip(np.dot(sp, front), 0, 1), 3)
+            print(frontiness)
             bar = Bar("Building Filter", max=ir.shape[0])
             for m in range(ir.shape[0]):
                 ir[m, 0, :] = ir[m, 0, :] * frontiness[m]
