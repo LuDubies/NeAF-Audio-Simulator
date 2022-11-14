@@ -102,7 +102,7 @@ public class Dataset : MonoBehaviour {
     public void Start() {
         // set Geometry and SoundSource
         geometry = new Geometry();
-        sound = new SoundSource();
+        sound = new SoundSource(producer);
 
         Invoke("DetermineNextRecordingParameters", 3f);
     }
@@ -298,8 +298,7 @@ public class SoundSource {
     public float start;
     public float end;
 
-    public SoundSource() {
-        GameObject sourceObject = Object.FindObjectOfType<SteamAudio.SteamAudioSource>().gameObject;
+    public SoundSource(GameObject sourceObject) {
         geo = new TransformEssentials(sourceObject);
         AudioSource audioSource = sourceObject.GetComponent<AudioSource>();
         audioFileName = audioSource.clip.name;
