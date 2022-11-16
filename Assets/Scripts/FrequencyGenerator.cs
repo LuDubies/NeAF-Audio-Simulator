@@ -8,7 +8,7 @@ public class FrequencyGenerator : MonoBehaviour
 	[Range(200, 1000)]
 	public int frequency = 440;
 	[Range(0.0f, 1f)]
-	public float amplitude = 0.8f;
+	public float amplitude = 0.1f;
 	public bool on = true;
 	public bool debugMode = false;
 
@@ -53,5 +53,9 @@ public class FrequencyGenerator : MonoBehaviour
 
 		// update sampleInPeriod
 		sampleInPeriod = (sampleInPeriod + samplesToFill) % samplesPerPeriod;
+	}
+
+	public bool isRunning() {
+		return running && on;
 	}
 }
