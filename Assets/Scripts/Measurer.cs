@@ -224,11 +224,12 @@ public class Camera
     public void setNPixel(int n, float val) { image[n] = val; }
 
     public void saveImage() {
-        Debug.Log($"Saving image to {"xy"}.");
+        string filepath = @"C:\Users\lucad\Desktop\testy.png";
+        Debug.Log($"Saving image to {filepath}.");
         Texture2D imageTex = new Texture2D(width, height);
         var colorMap = image.Select(x => Color.Lerp(Color.black, Color.white, x));
         imageTex.SetPixels(colorMap.ToArray());
-        File.WriteAllBytes(@"C:\Users\lucad\Desktop\testy.png", imageTex.EncodeToPNG());
+        File.WriteAllBytes(filepath, imageTex.EncodeToPNG());
     }
 
 
