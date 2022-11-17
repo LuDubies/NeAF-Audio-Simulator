@@ -15,10 +15,7 @@ MonoBehaviour:
   audioEngine: 0
   SOFAFiles:
   - TRIM_04
-  - FFILT
-  - POWER2
   - POWER3
-  - POWER9
   - LeftPWR3
   - RightPWR3
   defaultMaterial: {fileID: 11400000, guid: a086f686223eed942816c70be67841b0, type: 2}

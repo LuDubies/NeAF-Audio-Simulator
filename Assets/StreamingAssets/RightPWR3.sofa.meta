@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/StreamingAssets/RightPWR3.sofa.meta
 guid: 7a2efbc18fd75cd4998281da667e5929
+========
+guid: 1968de5c3bbaa8042a081a6ab312f453
+>>>>>>>> 24951e2fdfae88385aa30c41763046d92f402331:Assets/StreamingAssets/POWER9.sofa.meta
 DefaultImporter:
   externalObjects: {}
   userData: 
