@@ -4,40 +4,35 @@ import matplotlib.colors as clrs
 import matplotlib
 from mpl_toolkits import mplot3d
 import numpy as np
+from argparse import ArgumentParser
 
 
-SOURCE_SOFA = r'../Assets/StreamingAssets/TRIM_04.sofa'
+SOFA_DIR = r'../Assets/StreamingAssets/'
 
 
 def plot_coordinates(coords, title):
     x0 = coords
     n0 = coords
 
-    # color mapping the different arrows
-    colors = []
-    marker_col = clrs.BASE_COLORS['r']
-    neutral_col = clrs.BASE_COLORS['b']
-    for c in x0:
-        if abs(c[1]) < 0.01:
-            colors.append(marker_col)
-        else:
-            colors.append(neutral_col)
-    print(f"Marked arrow count is {len([col for col in colors if col == marker_col])}")
-
     fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(111, projection='3d')
     q = ax.quiver(x0[:, 0], x0[:, 1], x0[:, 2], n0[:, 0],
-                  n0[:, 1], n0[:, 2], color=colors, length=0.1)
+                  n0[:, 1], n0[:, 2], length=0.1)
     plt.xlabel('x (m)')
     plt.ylabel('y (m)')
     plt.title(title)
     return q
 
+
 def main():
+
+    parser = ArgumentParser()
+    parser.add_argument('filename')
+    args = parser.parse_args()
 
     matplotlib.use('tkagg')
 
-    HRTF = sofa.Database.open(SOURCE_SOFA)
+    HRTF = sofa.Database.open(SOFA_DIR + args.filename)
 
     # plot Source positions
     source_positions = HRTF.Source.Position.get_values(system="cartesian")
@@ -61,7 +56,6 @@ def main():
     HRTF.close()
 
     plt.show()
-
 
 if __name__ == "__main__":
     main()

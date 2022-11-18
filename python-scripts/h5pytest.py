@@ -20,6 +20,16 @@ def create_target_sofa(file, orig, options, parameter):
                 ir[m, 1, :] = np.zeros(ir.shape[2])
                 bar.next()
             bar.finish()
+        if 'one' in options:
+            bar = Bar("Trying to build default IR", max=ir.shape[0])
+            for m in range(ir.shape[0]):
+                new_ir = np.zeros(ir.shape[2])
+                new_ir[0] = 1
+                new_ir[1] = 0.5
+                ir[m, 0, :] = new_ir
+                ir[m, 1, :] = new_ir
+                bar.next()
+            bar.finish()
         if 'trim' in options:
             backward = [(i, list(p)) for i, p in enumerate(sp) if p[0] < param]
             print(backward)
@@ -51,6 +61,7 @@ if __name__ == "__main__":
     parser = ap.ArgumentParser()
     parser.add_argument('filename', default='NEW_HRTF.sofa')
     parser.add_argument('-z', '--zero', action='store_true')
+    parser.add_argument('--one', action='store_true')
     parser.add_argument('-t', '--trim')
     parser.add_argument('-f', '--filter')
     parser.add_argument('-o', '--original', default='MRT01.sofa')
@@ -61,6 +72,8 @@ if __name__ == "__main__":
     param = None
     if args.zero:
         operations.append('zero')
+    if args.one:
+        operations.append('one')
     if args.filter is not None:
         operations.append('filter')
         param = args.filter
