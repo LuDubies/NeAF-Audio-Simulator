@@ -20,12 +20,11 @@ def create_target_sofa(file, orig, options, parameter):
                 ir[m, 1, :] = np.zeros(ir.shape[2])
                 bar.next()
             bar.finish()
-        if 'one' in options:
+        if 'default' in options:
             bar = Bar("Trying to build default IR", max=ir.shape[0])
             for m in range(ir.shape[0]):
                 new_ir = np.zeros(ir.shape[2])
                 new_ir[0] = 1
-                new_ir[1] = 0.5
                 ir[m, 0, :] = new_ir
                 ir[m, 1, :] = new_ir
                 bar.next()
@@ -42,7 +41,7 @@ def create_target_sofa(file, orig, options, parameter):
                 bar.next()
             bar.finish()
         if 'filter' in options:
-            front = np.array([0, -1, 0])
+            front = np.array([1, 0, 0])
             frontiness = np.power(np.clip(np.dot(sp, front), 0, 1), int(param))
             print(f"Building filter with power {param}.")
             bar = Bar("Building Filter", max=ir.shape[0])
@@ -61,7 +60,7 @@ if __name__ == "__main__":
     parser = ap.ArgumentParser()
     parser.add_argument('filename', default='NEW_HRTF.sofa')
     parser.add_argument('-z', '--zero', action='store_true')
-    parser.add_argument('--one', action='store_true')
+    parser.add_argument('-d', '--default', action='store_true')
     parser.add_argument('-t', '--trim')
     parser.add_argument('-f', '--filter')
     parser.add_argument('-o', '--original', default='MRT01.sofa')
@@ -72,8 +71,8 @@ if __name__ == "__main__":
     param = None
     if args.zero:
         operations.append('zero')
-    if args.one:
-        operations.append('one')
+    if args.default:
+        operations.append('default')
     if args.filter is not None:
         operations.append('filter')
         param = args.filter
