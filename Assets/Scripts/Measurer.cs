@@ -3,13 +3,17 @@ using UnityEditor;
 using UnityEngine;
 using System.IO;
 
+public enum Mode { Random, Picture };
+public enum PictureMode { Translated, Rotated };
+
 public class Measurer : MonoBehaviour
 {
     public bool debugMode = false;
     public bool on = true;
 
-    public enum Mode { Random, Picture};
+    
     public Mode mode;
+    public PictureMode pictureMode;
 
     // RANDOM how many positions with how many rotations to test
     [Range(1, 5000)]
@@ -62,7 +66,7 @@ public class Measurer : MonoBehaviour
         measurement = new float[measurementSamples];
         measuredPixels = 0;
 
-        camera = new Camera(listener.transform.position, listener.transform.forward, pictureWidth, pictureHeight);
+        camera = new Camera(listener.transform.position, listener.transform.forward, pictureWidth, pictureHeight, pictureMode);
 
         if (debugMode) { Debug.Log($"Sampling rate is {AudioSettings.outputSampleRate}." +
             $" For measurement time of {probingTime}s, we collect {measurementSamples} samples each measurement!"); }
@@ -105,6 +109,7 @@ public class Measurer : MonoBehaviour
         }
         if(mode == Mode.Picture) { 
             listener.transform.position = camera.getNPosition(measuredPixels, pixelSize);
+            listener.transform.rotation = camera.getNRotation(measuredPixels);
             if(debugMode) { Debug.Log($"Pixel {measuredPixels} position is {listener.transform.position}."); }
         }
         measureing = true;
@@ -194,27 +199,48 @@ public class Camera
     private Vector3 origin;
     private Vector3 direction;
 
+    private PictureMode picmode;
+
     private int width;
     private int height;
 
     private float[] image;
 
-    public Camera(Vector3 origin, Vector3 direction, int width, int height)
+    public Camera(Vector3 origin, Vector3 direction, int width, int height, PictureMode pm)
     {
         this.origin = origin;
         this.direction = direction;
         this.width = width;
         this.height = height;
+        this.picmode = pm;
         image = new float[width * height];
     }
 
     public Vector3 getPosition(int w, int h, float precision) {
-        return origin +
+        if(picmode == PictureMode.Translated){
+            return origin +
             (width / (float)2 - w - 0.5f * precision) * Vector3.Cross(direction, Vector3.up).normalized * precision +
             (height / (float)2 - h - 0.5f * precision) * Vector3.up * precision;
+        } else{
+            return origin;
+        } 
+    }
+
+    public Quaternion getRotation(int w, int h) {
+        if(picmode == PictureMode.Translated){
+            return Quaternion.LookRotation(direction);
+        }
+        else {
+            float y_angle = -(width/2) + w;
+            float x_angle = (height/2) - h;
+            return Quaternion.LookRotation(Quaternion.Euler(x_angle, y_angle, 0) * direction);
+        }
     }
     public Vector3 getNPosition(int n, float precision) {
         return getPosition(n % width, n / width, precision);
+    }
+    public Quaternion getNRotation(int n) {
+        return getRotation(n % width, n / width);
     }
 
     public void setOrigin(Vector3 origin) { this.origin = origin; }
@@ -222,6 +248,7 @@ public class Camera
     public void setWidthHeight(int width, int height) { this.width = width; this.height = height; image = new float[width * height]; }
     public void setPixel(int width, int height, float val) { image[width + height * this.width] = val; }
     public void setNPixel(int n, float val) { image[n] = val; }
+    public void setPictureMode(PictureMode pm) { this.picmode = pm; }
 
     public void saveImage() {
         string dataDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../data/"));

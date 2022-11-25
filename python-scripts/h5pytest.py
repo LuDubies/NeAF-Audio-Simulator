@@ -42,8 +42,12 @@ def create_target_sofa(file, orig, options, parameter):
             bar.finish()
         if 'filter' in options:
             front = np.array([1, 0, 0])
-            frontiness = np.power(np.clip(np.dot(sp, front), 0, 1), int(param))
-            print(f"Building filter with power {param}.")
+            #dots = np.clip(np.dot(sp / np.linalg.norm(sp), front), 0, 1)
+            dots = np.clip(np.dot(sp, front), 0, 1)
+            print(f"dot-prods are between {np.min(dots)} and {np.max(dots)}")
+            frontiness = np.exp(((np.square(dots) - 1) / float(param)))
+            print(f"factors are between {np.min(frontiness)} and {np.max(frontiness)}")
+            print(f"Building filter with sigma {param}.")
             bar = Bar("Building Filter", max=ir.shape[0])
             for m in range(ir.shape[0]):
                 ir[m, 0, :] = ir[m, 0, :] * frontiness[m]
@@ -63,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--default', action='store_true')
     parser.add_argument('-t', '--trim')
     parser.add_argument('-f', '--filter')
-    parser.add_argument('-o', '--original', default='MRT01.sofa')
+    parser.add_argument('-o', '--original', default='my_default.sofa')
     args = parser.parse_args()
     filename = args.filename
     original = args.original
