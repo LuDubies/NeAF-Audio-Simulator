@@ -10,6 +10,7 @@ public class Measurer : MonoBehaviour
 {
     public bool debugMode = false;
     public bool on = true;
+    public bool reset = false;
 
     
     public Mode mode;
@@ -74,8 +75,11 @@ public class Measurer : MonoBehaviour
 
 
     // Update is called once per frame
-    void Update()
-    {
+    void Update(){
+        if (reset){
+            Reset();
+            return;
+        }
         if (!on) { return; }
 
         handleTimer();
@@ -95,6 +99,19 @@ public class Measurer : MonoBehaviour
 
     }
 
+    private void Reset() {
+        measuredPixels = 0;
+        filledSamples = 0;
+        running = false;
+        reset = false;
+        finished = false;
+        measureing = false;
+        waitForMeasure = false;
+        startingRotation = listener.transform.rotation;
+        camera.setOrigin(listener.transform.position);
+        camera.setDirection(listener.transform.forward);
+    }
+
     // callback to activate measuring (called some time after sound generation started)
     private void activateMeasureing() {
         running = true;
@@ -110,7 +127,7 @@ public class Measurer : MonoBehaviour
         if(mode == Mode.Picture) { 
             listener.transform.position = camera.getNPosition(measuredPixels, pixelSize);
             listener.transform.rotation = camera.getNRotation(measuredPixels);
-            if(debugMode) { Debug.Log($"Pixel {measuredPixels} position is {listener.transform.position}."); }
+            if(debugMode) { Debug.Log($"Pixel {measuredPixels} position is {listener.transform.position} in direction {listener.transform.forward}."); }
         }
         measureing = true;
     }
