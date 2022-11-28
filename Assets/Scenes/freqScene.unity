@@ -498,7 +498,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 566535058}
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 94.25, y: 0, z: 7}
+  m_LocalPosition: {x: 100, y: 0, z: 15.84}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -570,7 +570,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   debugMode: 1
   on: 0
+  reset: 0
   mode: 1
+  pictureMode: 1
   totalPositions: 30
   totalRotations: 1
   pictureCount: 1
@@ -945,7 +947,7 @@ AudioSource:
   Loop: 0
   Mute: 0
   Spatialize: 1
-  SpatializePostEffects: 0
+  SpatializePostEffects: 1
   Priority: 128
   DopplerLevel: 0
   MinDistance: 1
@@ -1048,7 +1050,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2102305806}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 93.7, y: 0, z: -0.6}
+  m_LocalPosition: {x: 7.77, y: 0, z: 10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
