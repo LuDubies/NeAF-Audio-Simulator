@@ -13,6 +13,10 @@ def create_target_sofa(file, orig, options, parameter):
         iro = o['Data.IR']
         sp = f['SourcePosition']
 
+        # ensure sampling rate is 48000
+        sr = f['Data.SamplingRate']
+        sr[0] = 48000
+
         if 'zero' in options:
             bar = Bar("Zeroing IR", max=ir.shape[0])
             for m in range(ir.shape[0]):
