@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using System.IO;
+
 
 public enum Mode { Random, Picture };
 public enum PictureMode { Translated, Rotated };
@@ -24,11 +24,13 @@ public class Measurer : MonoBehaviour
     private int totalMeasurements;
 
     // PICTURE
+    [Range(1, 1000)]
     public int pictureCount = 1;
     public int pictureWidth = 100;
     public int pictureHeight = 50;
     public float pixelSize = 0.02f;
     private int measuredPixels;
+    private int picturesTaken;
     private Camera camera;
 
     public FrequencyGenerator generator;
@@ -44,7 +46,7 @@ public class Measurer : MonoBehaviour
     private int filledSamples = 0;
 
     // contol flow
-    private bool measureing = false;
+    private bool measureInAudioThreat = false;
     private bool running = false;
     private bool waitForMeasure = false;
     private bool finished = false;
@@ -66,6 +68,7 @@ public class Measurer : MonoBehaviour
         measurementSamples = (int)Mathf.Ceil(AudioSettings.outputSampleRate * 2 * probingTime);
         measurement = new float[measurementSamples];
         measuredPixels = 0;
+        picturesTaken = 0;
 
         camera = new Camera(listener.transform.position, listener.transform.forward, pictureWidth, pictureHeight, pictureMode);
 
@@ -77,6 +80,10 @@ public class Measurer : MonoBehaviour
     // Update is called once per frame
     void Update(){
         if (reset){
+            //manuall reset performed
+            finished = false;
+            measureInAudioThreat = false;
+            waitForMeasure = false;
             Reset();
             return;
         }
@@ -92,7 +99,7 @@ public class Measurer : MonoBehaviour
         }
 
         // check if a measurement is finished
-        if(!finished && running && !measureing)
+        if(!finished && running && !measureInAudioThreat)
         {
             finishMeasurement();
         }
@@ -102,21 +109,18 @@ public class Measurer : MonoBehaviour
     private void Reset() {
         measuredPixels = 0;
         filledSamples = 0;
-        running = false;
         reset = false;
-        finished = false;
-        measureing = false;
-        waitForMeasure = false;
-        startingRotation = listener.transform.rotation;
-        camera.setOrigin(listener.transform.position);
-        camera.setDirection(listener.transform.forward);
+        listener.transform.rotation = camera.getDirection();
+        listener.transform.position = camera.getOrigin();
     }
 
     // callback to activate measuring (called some time after sound generation started)
     private void activateMeasureing() {
         running = true;
         waitForMeasure = false;
-        if(debugMode) { Debug.Log("Starting measurements"); }
+        camera.setOrigin(listener.transform.position);
+        camera.setDirection(listener.transform.forward);
+        if (debugMode) { Debug.Log("Starting measurements"); }
         startNextMeasurement();
     }
 
@@ -129,7 +133,7 @@ public class Measurer : MonoBehaviour
             listener.transform.rotation = camera.getNRotation(measuredPixels);
             if(debugMode) { Debug.Log($"Pixel {measuredPixels} position is {listener.transform.position} in direction {listener.transform.forward}."); }
         }
-        measureing = true;
+        measureInAudioThreat = true;
     }
 
     private void finishMeasurement() {
@@ -159,8 +163,30 @@ public class Measurer : MonoBehaviour
         } else if(mode == Mode.Picture) {
             camera.setNPixel(measuredPixels, leftRMS);
             measuredPixels++;
-            if(measuredPixels >= pictureWidth * pictureHeight) { Debug.Log("Pic done"); endMeasuring(); camera.saveImage(); return; }
+            if(measuredPixels >= pictureWidth * pictureHeight) { Debug.Log("Pic done"); camera.saveImage(); picturesTaken++;
+                if (picturesTaken >= pictureCount) {
+                    endMeasuring();
+                    return;
+                } else {
+                    Reset();
+                    setNextPictureParameters();
+                }
+            }
+            
         }
+        startNextMeasurement();
+    }
+
+    private void setNextPictureParameters() {
+        (int, int) valid_x = (-5, 5);
+        (int, int) valid_z = (5, 10);
+        (int, int) valid_y = (0, 2);
+
+        Vector3 look_to = generator.transform.position;
+        Vector3 new_pos = new Vector3(Random.Range(valid_x.Item1, valid_x.Item2), Random.Range(valid_y.Item1, valid_y.Item2), Random.Range(valid_z.Item1, valid_z.Item2));
+        camera.setOrigin(new_pos);
+        camera.setDirection((look_to - new_pos).normalized);
+
         startNextMeasurement();
     }
 
@@ -192,7 +218,7 @@ public class Measurer : MonoBehaviour
         }
     }
     private void OnAudioFilterRead(float[] data, int channels) {
-        if (measureing)
+        if (measureInAudioThreat)
         {
             int currentSamples = data.Length;
 
@@ -205,77 +231,8 @@ public class Measurer : MonoBehaviour
             {
                 data.Take(measurementSamples - filledSamples).ToArray().CopyTo(measurement, filledSamples);
                 filledSamples = 0;
-                measureing = false;
+                measureInAudioThreat = false;
             }
         }
     }
-}
-
-public class Camera
-{
-    private Vector3 origin;
-    private Vector3 direction;
-
-    private PictureMode picmode;
-
-    private int width;
-    private int height;
-
-    private float[] image;
-
-    public Camera(Vector3 origin, Vector3 direction, int width, int height, PictureMode pm)
-    {
-        this.origin = origin;
-        this.direction = direction;
-        this.width = width;
-        this.height = height;
-        this.picmode = pm;
-        image = new float[width * height];
-    }
-
-    public Vector3 getPosition(int w, int h, float precision) {
-        if(picmode == PictureMode.Translated){
-            return origin +
-            (width / (float)2 - w - 0.5f * precision) * Vector3.Cross(direction, Vector3.up).normalized * precision +
-            (height / (float)2 - h - 0.5f * precision) * Vector3.up * precision;
-        } else{
-            return origin;
-        } 
-    }
-
-    public Quaternion getRotation(int w, int h) {
-        if(picmode == PictureMode.Translated){
-            return Quaternion.LookRotation(direction);
-        }
-        else {
-            float y_angle = -(width/2) + w;
-            float x_angle = (height/2) - h;
-            return Quaternion.LookRotation(Quaternion.Euler(x_angle, y_angle, 0) * direction);
-        }
-    }
-    public Vector3 getNPosition(int n, float precision) {
-        return getPosition(n % width, n / width, precision);
-    }
-    public Quaternion getNRotation(int n) {
-        return getRotation(n % width, n / width);
-    }
-
-    public void setOrigin(Vector3 origin) { this.origin = origin; }
-    public void setDirection(Vector3 direction) { this.direction = direction; }
-    public void setWidthHeight(int width, int height) { this.width = width; this.height = height; image = new float[width * height]; }
-    public void setPixel(int width, int height, float val) { image[width + height * this.width] = val; }
-    public void setNPixel(int n, float val) { image[n] = val; }
-    public void setPictureMode(PictureMode pm) { this.picmode = pm; }
-
-    public void saveImage() {
-        string dataDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../data/"));
-        string filename= "capture-" + System.DateTime.Now.ToString("MM-ddTHH-mm-ss") + ".png";
-        Debug.Log($"Saving image to {dataDir} as {filename}.");
-        Texture2D imageTex = new Texture2D(width, height);
-        var colorMap = image.Select(x => Color.Lerp(Color.black, Color.white, x));
-        imageTex.SetPixels(colorMap.ToArray());
-        File.WriteAllBytes(dataDir + filename, imageTex.EncodeToPNG());
-    }
-
-
 }
