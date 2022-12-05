@@ -35,10 +35,25 @@ def qvec2rotmat(qvec):
 
 def transform_transforms(s, t):
     transforms = []
+    out = dict()
     target_file = ""
     with open(s, 'r') as tf:
         target_file = os.path.join(os.path.dirname(os.path.realpath(tf.name)), t)
         frame_details = tf.readlines()
+        frame_details = [fd.replace(',', '.') for fd in frame_details]  # in case c# decides to write ,
+        camera_parameters = frame_details[0]
+        frame_details = frame_details[1::]
+
+        # get camera parameters
+        _, w, h, cax, cay = tuple(camera_parameters.split())
+        out.update({
+            "camera_angle_x": cax,
+            "camera_angle_y": cay,
+            "w": w,
+            "h": h,
+        })
+
+        # get the parameteers for all pictures
         for frame in frame_details:
             vals = frame.split(" ")
             qvec = np.array(tuple(map(float, vals[1:5])))
@@ -65,18 +80,19 @@ def transform_transforms(s, t):
             R[-1, -1] = 1
 
             c2w = np.matmul(R, c2w)
-            transforms.append({"file_path": vals[0] + ".png", "transform_matrix": c2w})
+            transforms.append({"file_path": "capture-" + vals[0] + ".png", "transform_matrix": c2w})
 
-    out = {"frames": transforms}
+    out.update({"frames": transforms})
     for f in out["frames"]:
         f["transform_matrix"] = f["transform_matrix"].tolist()
+
     with open(target_file, 'w') as target:
         json.dump(out, target, indent=2)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument('-s', '--source', default='transform.txt')
+    parser.add_argument('-s', '--source', default='transforms.txt')
     parser.add_argument('-t', '--target', default='transforms.json')
     args = parser.parse_args()
 

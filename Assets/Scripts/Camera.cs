@@ -70,6 +70,7 @@ public class Camera {
         string transformPath = Path.Combine(dataDir, "transforms.txt");
         if(!Directory.Exists(dataDir)) {
             Directory.CreateDirectory(dataDir);
+            File.AppendAllText(transformPath, $"camera {width} {height} {(width/(float)360) * 2 * Mathf.PI} {height/(float)360 * 2 * Mathf.PI}" + Environment.NewLine);
         }
         string filename = $"capture-{++saves}" + ".png";
         Debug.Log($"Saving image to {dataDir} as {filename}.");
@@ -78,6 +79,7 @@ public class Camera {
         imageTex.SetPixels(colorMap.ToArray());
         File.WriteAllBytes(Path.Combine(dataDir, filename), imageTex.EncodeToPNG());
         Quaternion rotation = Quaternion.LookRotation(direction);
+        // save rotation (Quat) and position (Vec3)
         File.AppendAllText(transformPath, $"{saves} {rotation.w} {rotation.x} {rotation.y} {rotation.z} {origin.x} {origin.y} {origin.z}" + Environment.NewLine);
     }
 }
