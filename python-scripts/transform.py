@@ -33,7 +33,8 @@ def qvec2rotmat(qvec):
         ]
     ])
 
-def transform_transforms(s, t):
+
+def transform_transforms(s, t, use_colmap):
     transforms = []
     out = dict()
     target_file = ""
@@ -47,10 +48,19 @@ def transform_transforms(s, t):
         # get camera parameters
         _, w, h, cax, cay = tuple(camera_parameters.split())
         out.update({
-            "camera_angle_x": cax,
-            "camera_angle_y": cay,
-            "w": w,
-            "h": h,
+            "camera_angle_x": float(cax),
+            "camera_angle_y": float(cay),
+            "w": int(w),
+            "h": int(h),
+            "fl_x": 1375.52,
+            "fl_y": 1374.49,
+            "k1": 0.0578421,
+            "k2": -0.0805099,
+            "p1": -0.000980296,
+            "p2": 0.00015575,
+            "cx": 554.558,
+            "cy": 965.268,
+            "aabb_scale": 4,
         })
 
         # get the parameteers for all pictures
@@ -59,28 +69,39 @@ def transform_transforms(s, t):
             qvec = np.array(tuple(map(float, vals[1:5])))
             tvec = np.array(tuple(map(float, vals[5:8])))
 
-            bottom = np.array([0.0, 0.0, 0.0, 1.0]).reshape([1, 4])
-            up = np.zeros(3)
-            R = qvec2rotmat(-qvec)
-            t = tvec.reshape([3, 1])
-            m = np.concatenate([np.concatenate([R, t], 1), bottom], 0)
-            c2w = np.linalg.inv(m)
-            c2w[0:3, 2] *= -1  # flip the y and z axis
-            c2w[0:3, 1] *= -1
-            c2w = c2w[[1, 0, 2, 3], :]  # swap y and z
-            c2w[2, :] *= -1  # flip whole world upside down
+            if use_colmap:
+                bottom = np.array([0.0, 0.0, 0.0, 1.0]).reshape([1, 4])
+                up = np.zeros(3)
+                R = qvec2rotmat(-qvec)
+                t = tvec.reshape([3, 1])
+                m = np.concatenate([np.concatenate([R, t], 1), bottom], 0)
+                c2w = np.linalg.inv(m)
+                c2w[0:3, 2] *= -1  # flip the y and z axis
+                c2w[0:3, 1] *= -1
+                c2w = c2w[[1, 0, 2, 3], :]  # swap y and z
+                c2w[2, :] *= -1  # flip whole world upside down
 
-            up += c2w[0:3, 1]
+                up += c2w[0:3, 1]
+                up = up / np.linalg.norm(up)
+                R = rotmat(up, [0, 0, 1])  # rotate up vector to [0,0,1]
+                R = np.pad(R, [0, 1])
+                R[-1, -1] = 1
 
-            # don't keep colmap coords - reorient the scene to be easier to work with
+                c2w = np.matmul(R, c2w)
+                transforms.append({"file_path": "capture-" + vals[0] + ".png", "transform_matrix": c2w})
+            else:
+                bottom = np.array([0.0, 0.0, 0.0, 1.0]).reshape([1, 4])
+                R = qvec2rotmat(qvec)
+                t = tvec.reshape([3, 1])
+                t = t[[2, 0, 1], :]
 
-            up = up / np.linalg.norm(up)
-            R = rotmat(up, [0, 0, 1])  # rotate up vector to [0,0,1]
-            R = np.pad(R, [0, 1])
-            R[-1, -1] = 1
+                # Rotations
+                R = np.matmul(rotmat([0, 1, 0], [0, 0, 1]), R)  # rotate camera y down
+                R = np.matmul(rotmat([0, 1, 0], [1, 0, 0]), R)  # rotate camera to face center
 
-            c2w = np.matmul(R, c2w)
-            transforms.append({"file_path": "capture-" + vals[0] + ".png", "transform_matrix": c2w})
+                m = np.concatenate([np.concatenate([R, t], 1), bottom], 0)
+
+                transforms.append({"file_path": "capture-" + vals[0] + ".png", "transform_matrix": m})
 
     out.update({"frames": transforms})
     for f in out["frames"]:
@@ -94,8 +115,9 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument('-s', '--source', default='transforms.txt')
     parser.add_argument('-t', '--target', default='transforms.json')
+    parser.add_argument('-c', '--colmap', action='store_true')
     args = parser.parse_args()
 
-    transform_transforms(args.source, args.target)
+    transform_transforms(args.source, args.target, args.colmap)
 
 

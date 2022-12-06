@@ -1,8 +1,8 @@
 {
-  "camera_angle_x": "1.745329",
-  "camera_angle_y": "0.8726646",
-  "w": "100",
-  "h": "50",
+  "camera_angle_x": 1.745329,
+  "camera_angle_y": 0.8726646,
+  "w": 100,
+  "h": 50,
   "frames": [
     {
       "file_path": "capture-1.png",
